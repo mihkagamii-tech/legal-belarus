@@ -15,7 +15,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a1520; }
     #root { min-height: 100vh; }
-    /* PWA install banner */
     #pwa-install {
       display: none;
       position: fixed;
@@ -39,9 +38,8 @@
 <body>
   <div id="root"></div>
   <button id="pwa-install" onclick="installPWA()">📲 Установить приложение</button>
-  <script type="module" src="/src/main.jsx"></script>
+  <script type="module" src="./src/main.jsx"></script>
   <script>
-    // PWA установка
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -57,7 +55,6 @@
         });
       }
     }
-    // Регистрация Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(() => {});

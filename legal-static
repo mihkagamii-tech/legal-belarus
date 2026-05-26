@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a1520" />
+  <meta name="description" content="Юридическая помощь в Беларуси — консультации по ТК, ГК, КоАП, КоБС" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ЮрПомощь РБ" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <title>ЮрПомощь РБ — Юридические консультации Беларусь</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a1520; }
+    #root { min-height: 100vh; }
+    /* PWA install banner */
+    #pwa-install {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #c9a84c, #8a6820);
+      color: #1a0a00;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-family: sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      z-index: 9999;
+      box-shadow: 0 4px 20px rgba(201,168,76,0.4);
+      white-space: nowrap;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-DIYrgRVN.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <button id="pwa-install" onclick="installPWA()">📲 Установить приложение</button>
+  <script>
+    // PWA установка
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('pwa-install').style.display = 'block';
+    });
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          document.getElementById('pwa-install').style.display = 'none';
+        });
+      }
+    }
+    // Регистрация Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
+
+{
+  "name": "ЮрПомощь РБ",
+  "short_name": "ЮрПомощь",
+  "description": "Юридические консультации по законодательству Беларуси",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1520",
+  "theme_color": "#c9a84c",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["utilities", "productivity"],
+  "lang": "ru"
+}
+
+// Service Worker — позволяет устанавливать как приложение и работать офлайн
+const CACHE = 'yurpomosh-v1';
+const STATIC = ['/', '/index.html', '/manifest.json'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)).catch(() => {}));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  // API запросы — всегда через сеть
+  if (e.request.url.includes('/api/')) return;
+
+  e.respondWith(
+    fetch(e.request)
+      .then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
+  );
+});
+
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
